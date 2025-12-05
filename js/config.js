@@ -7,8 +7,8 @@ const isGitHubPages = window.location.hostname === 'priyanshulink.github.io';
 
 const CONFIG = {
     // Use your deployed backend URL when on GitHub Pages, localhost for development
-    API_BASE_URL: isGitHubPages ? 'https://your-backend-url.com' : 'http://localhost:3000',
-    SOCKET_URL: isGitHubPages ? 'https://your-backend-url.com' : 'http://localhost:3000',
+    API_BASE_URL: isGitHubPages ? 'https://missing-person-detection-system.onrender.com' : 'http://localhost:3000',
+    SOCKET_URL: isGitHubPages ? 'https://missing-person-detection-system.onrender.com' : 'http://localhost:3000',
     TOKEN_KEY: 'auth_token',
     USER_KEY: 'user_data'
 };
