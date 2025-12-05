@@ -29,8 +29,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: [
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'https://priyanshulink.github.io'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
