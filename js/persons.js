@@ -201,7 +201,7 @@ class PersonsManager {
                 const token = localStorage.getItem('auth_token');
                 
                 try {
-                    const uploadResponse = await fetch('http://localhost:3000/api/upload/person-photo', {
+                    const uploadResponse = await fetch(`${CONFIG.API_BASE_URL}/api/upload/person-photo`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`
