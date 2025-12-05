@@ -12,20 +12,8 @@ const { spawn } = require('child_process');
 const Person = require('../models/Person');
 const { authenticate } = require('../middleware/auth');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'person-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for file uploads - use memory storage for cloud deployment
+const storage = multer.memoryStorage(); // Store in memory instead of disk
 
 const upload = multer({
   storage: storage,
@@ -90,8 +78,11 @@ router.post('/person-photo', authenticate, upload.single('photo'), async (req, r
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    const imagePath = req.file.path;
-    console.log('✅ File saved to:', imagePath);
+    // Convert image buffer to base64 for storage in MongoDB
+    const base64Image = req.file.buffer.toString('base64');
+    const imageUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+    
+    console.log('✅ Image converted to base64');
     
     // For cloud deployment: Skip face encoding extraction (requires Python/OpenCV)
     // Face recognition will work when running locally with Python environment
@@ -106,11 +97,10 @@ router.post('/person-photo', authenticate, upload.single('photo'), async (req, r
     console.log('📊 Upload result:', { facesDetected: result.facesDetected });
     
     if (!result.success) {
-      // Delete uploaded file if face detection failed
+    
+    if (!result.success) {
+      // Face detection failed
       console.error('❌ Face detection failed:', result.error);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
       return res.status(400).json({ 
         error: result.error || 'No face detected in image' 
       });
@@ -120,17 +110,12 @@ router.post('/person-photo', authenticate, upload.single('photo'), async (req, r
     res.json({
       message: 'Face encoding extracted successfully',
       encoding: result.encoding,
-      imageUrl: `/uploads/${req.file.filename}`,
-      facesDetected: result.faces_detected || 1
+      imageUrl: imageUrl, // Return base64 data URL
+      facesDetected: result.facesDetected || 1
     });
     
   } catch (error) {
     console.error('Upload error:', error);
-    
-    // Clean up uploaded file on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     
     res.status(500).json({ 
       error: error.message || 'Failed to process image' 
