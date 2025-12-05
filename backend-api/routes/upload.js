@@ -1,0 +1,188 @@
+/**
+ * Upload Routes
+ * Handles image uploads and face encoding extraction
+ */
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+const Person = require('../models/Person');
+const { authenticate } = require('../middleware/auth');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'person-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+/**
+ * Extract face encoding from image using Python script
+ */
+function extractFaceEncoding(imagePath) {
+  return new Promise((resolve, reject) => {
+    const pythonScript = path.join(__dirname, '../../ai-module/extract_encoding.py');
+    const python = spawn('python', [pythonScript, imagePath]);
+    
+    let dataString = '';
+    let errorString = '';
+    
+    python.stdout.on('data', (data) => {
+      dataString += data.toString();
+    });
+    
+    python.stderr.on('data', (data) => {
+      errorString += data.toString();
+    });
+    
+    python.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Python script failed: ${errorString}`));
+        return;
+      }
+      
+      try {
+        const result = JSON.parse(dataString);
+        resolve(result);
+      } catch (error) {
+        reject(new Error('Failed to parse encoding result'));
+      }
+    });
+  });
+}
+
+/**
+ * Upload person photo and extract face encoding
+ */
+router.post('/person-photo', authenticate, upload.single('photo'), async (req, res) => {
+  try {
+    console.log('📸 Photo upload request received');
+    
+    if (!req.file) {
+      console.error('❌ No file uploaded');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    const imagePath = req.file.path;
+    console.log('✅ File saved to:', imagePath);
+    
+    // Extract face encoding
+    console.log('🔍 Extracting face encoding...');
+    const result = await extractFaceEncoding(imagePath);
+    console.log('📊 Extraction result:', result);
+    
+    if (!result.success) {
+      // Delete uploaded file if face detection failed
+      console.error('❌ Face detection failed:', result.error);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+      return res.status(400).json({ 
+        error: result.error || 'No face detected in image' 
+      });
+    }
+    
+    console.log('✅ Face encoding extracted successfully');
+    res.json({
+      message: 'Face encoding extracted successfully',
+      encoding: result.encoding,
+      imageUrl: `/uploads/${req.file.filename}`,
+      facesDetected: result.faces_detected || 1
+    });
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ 
+      error: error.message || 'Failed to process image' 
+    });
+  }
+});
+
+/**
+ * Add face encoding to existing person
+ */
+router.post('/person/:id/add-encoding', authenticate, upload.single('photo'), async (req, res) => {
+  try {
+    const person = await Person.findById(req.params.id);
+    
+    if (!person) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    const imagePath = req.file.path;
+    
+    // Extract face encoding
+    const result = await extractFaceEncoding(imagePath);
+    
+    if (!result.success) {
+      fs.unlinkSync(imagePath);
+      return res.status(400).json({ 
+        error: result.error || 'No face detected in image' 
+      });
+    }
+    
+    // Add encoding to person
+    person.faceEncodings.push({
+      encoding: result.encoding,
+      imageUrl: `/uploads/${req.file.filename}`,
+      uploadedAt: new Date()
+    });
+    
+    await person.save();
+    
+    res.json({
+      message: 'Face encoding added successfully',
+      person: person
+    });
+    
+  } catch (error) {
+    console.error('Add encoding error:', error);
+    
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ 
+      error: error.message || 'Failed to add encoding' 
+    });
+  }
+});
+
+module.exports = router;

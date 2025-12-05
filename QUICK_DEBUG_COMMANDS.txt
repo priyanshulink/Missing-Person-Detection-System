@@ -1,0 +1,160 @@
+═══════════════════════════════════════════════════════════
+  CAMERA SECTION - QUICK DEBUG COMMANDS
+  Copy-paste these into browser console (F12)
+═══════════════════════════════════════════════════════════
+
+1️⃣ CHECK IF EVERYTHING EXISTS
+───────────────────────────────────────────────────────────
+console.log({
+  cameraManager: !!window.cameraManager,
+  camerasView: !!document.getElementById('camerasView'),
+  addButton: !!document.getElementById('addCameraBtn'),
+  cameraGrid: !!document.getElementById('cameraGrid'),
+  app: !!window.app
+});
+
+
+2️⃣ CHECK VISIBILITY STATUS
+───────────────────────────────────────────────────────────
+const view = document.getElementById('camerasView');
+console.log({
+  hasActiveClass: view?.classList.contains('active'),
+  displayStyle: view ? window.getComputedStyle(view).display : 'N/A',
+  isVisible: view ? window.getComputedStyle(view).display !== 'none' : false
+});
+
+
+3️⃣ CHECK BUTTON POSITION
+───────────────────────────────────────────────────────────
+const btn = document.getElementById('addCameraBtn');
+const rect = btn?.getBoundingClientRect();
+console.log({
+  exists: !!btn,
+  position: rect,
+  inViewport: rect ? (rect.top >= 0 && rect.left >= 0) : false,
+  hasSize: rect ? (rect.width > 0 && rect.height > 0) : false
+});
+
+
+4️⃣ CHECK CAMERAS LOADED
+───────────────────────────────────────────────────────────
+console.log({
+  camerasCount: window.cameraManager?.cameras?.length || 0,
+  cameras: window.cameraManager?.cameras?.map(c => ({
+    name: c.name,
+    url: c.streamUrl,
+    status: c.status
+  }))
+});
+
+
+5️⃣ CHECK GRID CONTENT
+───────────────────────────────────────────────────────────
+const grid = document.getElementById('cameraGrid');
+console.log({
+  exists: !!grid,
+  htmlLength: grid?.innerHTML.length || 0,
+  childrenCount: grid?.children.length || 0,
+  isEmpty: grid?.innerHTML.trim() === ''
+});
+
+
+6️⃣ CHECK ALL VIEWS
+───────────────────────────────────────────────────────────
+document.querySelectorAll('.view').forEach(v => {
+  console.log(v.id + ':', {
+    active: v.classList.contains('active'),
+    display: window.getComputedStyle(v).display
+  });
+});
+
+
+7️⃣ FORCE NAVIGATE TO CAMERAS
+───────────────────────────────────────────────────────────
+window.app?.navigateTo('cameras');
+
+
+8️⃣ MANUALLY LOAD CAMERAS
+───────────────────────────────────────────────────────────
+window.cameraManager?.loadCameras();
+
+
+9️⃣ FORCE SHOW CAMERAS VIEW
+───────────────────────────────────────────────────────────
+document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+document.getElementById('camerasView')?.classList.add('active');
+
+
+🔟 TEST BUTTON CLICK
+───────────────────────────────────────────────────────────
+document.getElementById('addCameraBtn')?.click();
+
+
+1️⃣1️⃣ RUN FULL DIAGNOSTIC
+───────────────────────────────────────────────────────────
+// Copy and paste entire content of DEBUG_CAMERA_CONSOLE.js
+
+
+1️⃣2️⃣ CHECK PARENT CHAIN
+───────────────────────────────────────────────────────────
+let el = document.getElementById('camerasView');
+let level = 0;
+while (el && level < 5) {
+  const styles = window.getComputedStyle(el);
+  console.log(`Level ${level}: ${el.tagName}#${el.id || 'no-id'}`, {
+    display: styles.display,
+    visibility: styles.visibility
+  });
+  el = el.parentElement;
+  level++;
+}
+
+
+1️⃣3️⃣ NUCLEAR OPTION (Force Everything)
+───────────────────────────────────────────────────────────
+window.app.navigateTo('cameras');
+setTimeout(() => {
+  const view = document.getElementById('camerasView');
+  view.classList.add('active');
+  view.style.display = 'block';
+  window.cameraManager.loadCameras();
+}, 500);
+
+
+1️⃣4️⃣ GET COMPLETE STATE SNAPSHOT
+───────────────────────────────────────────────────────────
+console.log('=== COMPLETE STATE ===');
+console.log('App:', {
+  exists: !!window.app,
+  currentView: window.app?.currentView
+});
+console.log('CameraManager:', {
+  exists: !!window.cameraManager,
+  camerasCount: window.cameraManager?.cameras?.length
+});
+console.log('DOM Elements:', {
+  camerasView: !!document.getElementById('camerasView'),
+  addButton: !!document.getElementById('addCameraBtn'),
+  cameraGrid: !!document.getElementById('cameraGrid')
+});
+console.log('Visibility:', {
+  viewActive: document.getElementById('camerasView')?.classList.contains('active'),
+  viewDisplay: window.getComputedStyle(document.getElementById('camerasView')).display,
+  gridChildren: document.getElementById('cameraGrid')?.children.length
+});
+
+
+═══════════════════════════════════════════════════════════
+  EXPECTED RESULTS WHEN WORKING
+═══════════════════════════════════════════════════════════
+
+After clicking "Cameras" nav link, you should see:
+
+✅ camerasView has active class: true
+✅ camerasView display: "block"
+✅ addButton exists: true
+✅ addButton in viewport: true
+✅ cameraGrid children count: 6 (or your camera count)
+✅ Grid HTML length: > 1000 (large number)
+
+═══════════════════════════════════════════════════════════

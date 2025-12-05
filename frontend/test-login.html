@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login Diagnostic Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testDashboard()">Test Dashboard Access</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const results = document.getElementById('results');
+        
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        function addJSON(title, data) {
+            const div = document.createElement('div');
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            results.appendChild(div);
+        }
+        
+        async function testLogin() {
+            results.innerHTML = '<h2>Testing Login...</h2>';
+            
+            try {
+                // Test 1: Check API connectivity
+                addResult('Test 1: Checking API connectivity...');
+                const healthResponse = await fetch(`${API_URL}/health`);
+                const healthData = await healthResponse.json();
+                addResult(`✅ API is reachable: ${healthData.status}`);
+                
+                // Test 2: Attempt login
+                addResult('Test 2: Attempting login...');
+                const loginResponse = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'ompriyanshu12@gmail.com',
+                        password: 'pradeep3133'
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (loginResponse.ok) {
+                    addResult('✅ Login successful!');
+                    addJSON('Login Response', loginData);
+                    
+                    // Store token
+                    localStorage.setItem('auth_token', loginData.token);
+                    localStorage.setItem('user_data', JSON.stringify(loginData.user));
+                    addResult('✅ Token stored in localStorage');
+                    
+                    // Test 3: Verify token works
+                    addResult('Test 3: Verifying token...');
+                    const profileResponse = await fetch(`${API_URL}/api/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${loginData.token}`
+                        }
+                    });
+                    
+                    if (profileResponse.ok) {
+                        const profileData = await profileResponse.json();
+                        addResult('✅ Token is valid!');
+                        addJSON('User Profile', profileData);
+                    } else {
+                        addResult('❌ Token validation failed', false);
+                    }
+                    
+                } else {
+                    addResult(`❌ Login failed: ${loginData.error}`, false);
+                    addJSON('Error Response', loginData);
+                }
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, false);
+                console.error('Test error:', error);
+            }
+        }
+        
+        async function testDashboard() {
+            results.innerHTML = '<h2>Testing Dashboard Access...</h2>';
+            
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                addResult('❌ No token found. Please login first.', false);
+                return;
+            }
+            
+            addResult('✅ Token found in localStorage');
+            
+            try {
+                // Test persons endpoint
+                addResult('Test: Fetching persons...');
+                const personsResponse = await fetch(`${API_URL}/api/persons`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (personsResponse.ok) {
+                    const personsData = await personsResponse.json();
+                    addResult(`✅ Persons loaded: ${personsData.total} persons`);
+                    addJSON('Persons Data', personsData);
+                } else {
+                    addResult('❌ Failed to load persons', false);
+                }
+                
+                // Test reports endpoint
+                addResult('Test: Fetching reports...');
+                const reportsResponse = await fetch(`${API_URL}/api/reports/stats/summary`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (reportsResponse.ok) {
+                    const reportsData = await reportsResponse.json();
+                    addResult('✅ Reports stats loaded');
+                    addJSON('Reports Stats', reportsData);
+                } else {
+                    addResult('❌ Failed to load reports', false);
+                }
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, false);
+                console.error('Dashboard test error:', error);
+            }
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            results.innerHTML = '<div class="test-result success">✅ LocalStorage cleared</div>';
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                addResult('ℹ️ Existing token found in localStorage');
+            } else {
+                addResult('ℹ️ No token in localStorage');
+            }
+        });
+    </script>
+</body>
+</html>

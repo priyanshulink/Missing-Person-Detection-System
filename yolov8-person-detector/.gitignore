@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# YOLOv8 models
+*.pt
+*.onnx
+*.engine
+
+# Database (optional - uncomment if you don't want to track person images)
+# database/persons/*.jpg
+# database/persons/*.jpeg
+# database/persons/*.png
+
+# Screenshots
+screenshot_*.jpg
+screenshot_*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

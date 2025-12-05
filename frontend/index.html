@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person Detection & Identification System</title>
+    <link rel="stylesheet" href="css/styles.css?v=3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <i class="fas fa-shield-alt"></i>
+                    <h1>Person Detection System</h1>
+                    <p>Secure Login</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <div id="loginError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="page">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-video"></i>
+                <span>Detection System</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#" data-page="dashboard" class="nav-link active">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="#" data-page="persons" class="nav-link">
+                    <i class="fas fa-users"></i> Persons
+                </a>
+                <a href="#" data-page="reports" class="nav-link">
+                    <i class="fas fa-file-alt"></i> Reports
+                </a>
+                <a href="#" data-page="alerts" class="nav-link">
+                    <i class="fas fa-bell"></i> Alerts
+                    <span id="alertBadge" class="badge">0</span>
+                </a>
+                <a href="#" data-page="cameras" class="nav-link">
+                    <i class="fas fa-video"></i> Cameras
+                </a>
+            </div>
+            <div class="nav-user">
+                <span id="userInfo"></span>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container">
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="view active">
+                <h2>Dashboard Overview</h2>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalPersons">0</h3>
+                            <p>Total Persons</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalMatches">0</h3>
+                            <p>Total Matches</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="pendingReports">0</h3>
+                            <p>Pending Reports</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="criticalAlerts">0</h3>
+                            <p>Critical Alerts</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Matches -->
+                <div class="section">
+                    <h3>Recent Matches</h3>
+                    <div id="recentMatches" class="matches-list">
+                        <p class="no-data">No recent matches</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Persons View -->
+            <div id="personsView" class="view">
+                <div class="view-header">
+                    <h2>Persons Management</h2>
+                    <button id="addPersonBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Person
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="missing">Missing</option>
+                        <option value="found">Found</option>
+                        <option value="active">Active</option>
+                    </select>
+                    <select id="priorityFilter">
+                        <option value="">All Priority</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="Search persons...">
+                </div>
+
+                <div id="personsList" class="persons-grid">
+                    <p class="no-data">Loading persons...</p>
+                </div>
+            </div>
+
+            <!-- Reports View -->
+            <div id="reportsView" class="view">
+                <h2>Match Reports</h2>
+                <div id="reportsList" class="reports-list">
+                    <p class="no-data">Loading reports...</p>
+                </div>
+            </div>
+
+            <!-- Cameras View -->
+            <div id="camerasView" class="view">
+                <div class="cameras-header">
+                    <h2><i class="fas fa-video"></i> Camera Management</h2>
+                    <button id="addCameraBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Camera
+                    </button>
+                </div>
+                
+                <div class="cameras-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Cameras</span>
+                        <span class="stat-value" id="totalCameras">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Active</span>
+                        <span class="stat-value active" id="activeCameras">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Inactive</span>
+                        <span class="stat-value inactive" id="inactiveCameras">0</span>
+                    </div>
+                </div>
+                
+                <div class="camera-grid" id="cameraGrid">
+                    <!-- Camera cards will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Alerts View -->
+            <div id="alertsView" class="view">
+                <h2>Real-Time Alerts</h2>
+                <div id="alertsList" class="alerts-list">
+                    <p class="no-data">No alerts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Person Modal -->
+    <div id="addPersonModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Person</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="addPersonForm">
+                <div class="form-group">
+                    <label for="personName">Name *</label>
+                    <input type="text" id="personName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="personAge">Age</label>
+                        <input type="number" id="personAge" min="0" max="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="personGender">Gender</label>
+                        <select id="personGender">
+                            <option value="other">Other</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="personStatus">Status</label>
+                        <select id="personStatus">
+                            <option value="missing">Missing</option>
+                            <option value="found">Found</option>
+                            <option value="active">Active</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="personPriority">Priority</label>
+                        <select id="personPriority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="personDescription">Description</label>
+                    <textarea id="personDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="personLocation">Last Seen Location</label>
+                    <input type="text" id="personLocation">
+                </div>
+                <div class="form-group">
+                    <label for="personPhoto">Photo (for face recognition)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" id="capturePhotoBtn" class="btn btn-secondary" style="flex: 1;">
+                            <i class="fas fa-camera"></i> Capture from Webcam
+                        </button>
+                        <button type="button" id="uploadPhotoBtn" class="btn btn-secondary" style="flex: 1;">
+                            <i class="fas fa-upload"></i> Upload Photo
+                        </button>
+                    </div>
+                    <input type="file" id="personPhoto" accept="image/*" style="display: none;">
+                    <small>Capture photo using webcam or upload existing photo</small>
+                </div>
+                <div id="photoPreview" style="margin-top: 10px; display: none;">
+                    <img id="previewImage" style="max-width: 200px; max-height: 200px; border-radius: 5px;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Person</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Webcam Capture Modal -->
+    <div id="webcamModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2>Capture Photo from Webcam</h2>
+            <div style="position: relative;">
+                <video id="webcamVideo" autoplay style="width: 100%; border-radius: 5px; background: #000;"></video>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid #00ff00; width: 300px; height: 300px; pointer-events: none;"></div>
+            </div>
+            <p style="text-align: center; margin-top: 10px;">Position face in the green box</p>
+            <div class="modal-footer">
+                <button type="button" id="cancelWebcamBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="captureBtn" class="btn btn-primary">
+                    <i class="fas fa-camera"></i> Capture Photo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="js/config.js?v=3"></script>
+    <script src="js/api.js?v=3"></script>
+    <script src="js/webcam-capture.js?v=3"></script>
+    <script src="js/auth.js?v=3"></script>
+    <script src="js/dashboard.js?v=3"></script>
+    <script src="js/persons.js?v=3"></script>
+    <script src="js/reports.js?v=3"></script>
+    <script src="js/alerts.js?v=3"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/cameras.js?v=1"></script>
+</body>
+</html>
